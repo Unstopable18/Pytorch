@@ -15,17 +15,17 @@ end=1
 step=0.02
 x=torch.arange(start,end,step).unsqueeze(dim=1)
 y=weight*x+bias
-print(f'x -> {len(x)}\n{x[:10]}')
-print(f'y -> {len(y)}\n{y[:10]}')
+# print(f'x -> {len(x)}\n{x[:10]}')
+# print(f'y -> {len(y)}\n{y[:10]}')
 
 X_train,X_test,y_train,y_test=train_test_split(x,y,test_size=0.2)
 
-print(f'------ Train Test Split ------\nX_train -> {X_train}\ny_train -> {y_train}\nX_test -> {X_test}\ny_test -> {y_test}')
-print(len(X_train),len(y_train),len(X_test),len(y_test))
+# print(f'------ Train Test Split ------\nX_train -> {X_train}\ny_train -> {y_train}\nX_test -> {X_test}\ny_test -> {y_test}')
+# print(len(X_train),len(y_train),len(X_test),len(y_test))
 def plot_predictions(train_data=X_train,train_label=y_train,test_data=X_test,test_label=y_test,predictions=None):
     plt.figure(figsize=(10,7))
     plt.scatter(train_data,train_label,c='b',s=4,label='Training Data')
-    plt.scatter(test_data,test_label,c='b',s=4,label='Testing Data')
+    plt.scatter(test_data,test_label,c='g',s=4,label='Testing Data')
 
     if predictions is not None:
         plt.scatter(test_data,predictions,c='r',s=4,label='Predictions')
@@ -45,9 +45,36 @@ class LinearRegressionModel(nn.Module):
 
 torch.manual_seed(42)
 model_0=LinearRegressionModel()
-print(list(model_0.parameters()))
-print(model_0.state_dict())
-with torch.inference_mode():
+# print(list(model_0.parameters()))
+# print(model_0.state_dict())
+with torch.inference_mode():  #inference mode disables grad, more faster
     y_pred=model_0(X_test)
-print(f'y_pred >>>>>>>>>>>>>\n{y_pred}')
-plot_predictions(predictions=y_pred)
+# print(f'y_pred >>>>>>>>>>>>>\n{y_pred}')
+# plot_predictions(predictions=y_pred)
+
+loss_fn=nn.L1Loss()
+optimizer=torch.optim.SGD(params=model_0.parameters(),lr=0.01)
+epochs=150
+
+epoch_count=[]
+train_loss_values=[]
+test_loss_values=[]
+
+for epoch in range(epochs):
+    model_0.train()
+    y_pred=model_0(X_train)
+    loss=loss_fn(y_pred,y_train)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    model_0.eval()
+    with torch.inference_mode():  #inference mode disables grad, more faster
+        test_pred=model_0(X_test)
+        test_loss=loss_fn(test_pred,y_test)
+    if epoch%10==0:
+        epoch_count.append(epoch)
+        train_loss_values.append(loss)
+        test_loss_values.append(test_loss)
+        print(f'Epoch -> {epoch}) | Loss  -> {loss}| Test Loss  -> {test_loss}')
+print(model_0.state_dict())
+plot_predictions(predictions=test_pred)
